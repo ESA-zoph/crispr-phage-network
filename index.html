@@ -7,9 +7,10 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;color:#1a1a1a;background:#f9f8f5;padding:0}
-header{background:#1D9E75;color:#fff;padding:18px 32px}
-header h1{font-size:20px;font-weight:600}
-header p{font-size:13px;opacity:.85;margin-top:4px}
+header{background:#6B0032;color:#fff;padding:16px 32px;display:flex;align-items:center;gap:24px}
+header img{height:48px;filter:brightness(0) invert(1);flex-shrink:0}
+header .htext h1{font-size:19px;font-weight:600}
+header .htext p{font-size:12px;opacity:.8;margin-top:3px}
 .main{max-width:960px;margin:0 auto;padding:24px 20px}
 
 /* GUIDE */
@@ -76,8 +77,11 @@ canvas#net{width:100%;border:1px solid #e5e3db;border-radius:8px;display:block;b
 </head>
 <body>
 <header>
-  <h1>🧬 CRISPR-Phage Resistance Network Analyzer</h1>
-  <p>Detect CRISPR arrays in bacteria, extract spacers, align to phage genomes, and visualize resistance networks</p>
+  <img src="./aub-logo.png" onerror="this.style.display='none'">
+  <div class="htext">
+    <h1>🧬 CRISPR-Phage Resistance Network Analyzer</h1>
+    <p>American University of Beirut · Detect CRISPR arrays, extract spacers, align to phage genomes, and visualize resistance networks</p>
+  </div>
 </header>
 
 <div class="main">
