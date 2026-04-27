@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRISPR-Phage Resistance Network Analyzer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;color:#1a1a1a;background:#f9f8f5;padding:0}
+header{background:#1D9E75;color:#fff;padding:18px 32px}
+header h1{font-size:20px;font-weight:600}
+header p{font-size:13px;opacity:.85;margin-top:4px}
+.main{max-width:960px;margin:0 auto;padding:24px 20px}
+
+/* GUIDE */
+.guide{background:#fff;border:1px solid #e5e3db;border-radius:10px;padding:20px 24px;margin-bottom:24px}
+.guide h2{font-size:15px;font-weight:600;margin-bottom:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.guide-body{font-size:13px;line-height:1.7;color:#444}
+.guide-body h3{font-size:13px;font-weight:600;margin:12px 0 4px;color:#1D9E75}
+.guide-body ol,.guide-body ul{padding-left:18px;margin:4px 0 10px}
+.guide-body li{margin-bottom:3px}
+.guide-body code{background:#f1efe8;padding:1px 5px;border-radius:3px;font-size:12px}
+.guide-body .note{background:#E1F5EE;border-left:3px solid #1D9E75;padding:8px 12px;border-radius:4px;margin:8px 0}
+.guide-body table{width:100%;border-collapse:collapse;margin:8px 0}
+.guide-body th{background:#f1efe8;text-align:left;padding:6px 8px;font-size:12px}
+.guide-body td{padding:5px 8px;border-bottom:1px solid #eee;font-size:12px}
+
+/* TOOL */
+.card{background:#fff;border:1px solid #e5e3db;border-radius:10px;padding:20px 24px;margin-bottom:16px}
+.card h2{font-size:14px;font-weight:600;margin-bottom:14px;color:#333}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.upload-zone{border:1.5px dashed #ccc;border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:background .2s}
+.upload-zone:hover{background:#f5f5f2}
+.upload-zone input{display:none}
+.upload-zone .label{font-size:13px;color:#555;font-weight:500}
+.upload-zone .hint{font-size:11px;color:#999;margin-top:4px}
+.file-list{font-size:11px;margin-top:8px}
+.file-tag{display:inline-block;padding:2px 8px;border-radius:4px;margin:2px;font-size:11px}
+.file-tag.bact{background:#E1F5EE;color:#0F6E56}
+.file-tag.phage{background:#FAECE7;color:#993C1D}
+.slider-row{display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:8px}
+.slider-row label{min-width:110px;color:#555}
+.slider-row input{flex:1}
+.slider-row span{min-width:38px;text-align:right;font-weight:500;font-size:13px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+button.action{padding:9px 18px;font-size:13px;font-weight:500;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer}
+button.action:hover{background:#f5f5f2}
+button.action.primary{background:#1D9E75;color:#fff;border-color:#1D9E75}
+button.action.primary:hover{background:#178a65}
+button.action:disabled{opacity:.4;cursor:not-allowed}
+button.action.danger{color:#993C1D;border-color:#e5bfb5}
+.progress{margin:14px 0;display:none}
+.progress-bar-outer{height:6px;background:#eee;border-radius:3px;overflow:hidden}
+.progress-bar-inner{height:100%;width:0%;background:#1D9E75;border-radius:3px;transition:width .3s}
+.progress-label{font-size:12px;color:#888;margin-top:6px}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat{background:#f9f8f5;border-radius:8px;padding:12px 14px;border:1px solid #eee}
+.stat .n{font-size:24px;font-weight:600;color:#1D9E75}
+.stat .l{font-size:11px;color:#888;margin-top:2px}
+#canvas-wrap{position:relative;width:100%;display:none}
+canvas#net{width:100%;border:1px solid #e5e3db;border-radius:8px;display:block;background:#fff}
+.legend{display:flex;gap:16px;margin-top:8px;font-size:12px;color:#888;align-items:center;flex-wrap:wrap}
+.legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+#tooltip{position:absolute;background:#fff;border:1px solid #e5e3db;border-radius:8px;padding:10px 14px;font-size:12px;pointer-events:none;display:none;max-width:230px;z-index:10;line-height:1.6;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.results-table{width:100%;border-collapse:collapse;font-size:12px}
+.results-table th{text-align:left;padding:7px 8px;border-bottom:1px solid #e5e3db;color:#888;font-weight:500;background:#fafaf8}
+.results-table td{padding:6px 8px;border-bottom:1px solid #f0ede6}
+.badge{display:inline-block;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:500}
+.badge.high{background:#E1F5EE;color:#0F6E56}
+.badge.mid{background:#FAEEDA;color:#854F0B}
+.badge.low{background:#FCEBEB;color:#A32D2D}
+.badge.none{background:#F1EFE8;color:#5F5E5A}
+.err{color:#A32D2D;font-size:13px;margin-top:8px}
+.dl-row{display:none;gap:8px;margin-top:10px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧬 CRISPR-Phage Resistance Network Analyzer</h1>
+  <p>Detect CRISPR arrays in bacteria, extract spacers, align to phage genomes, and visualize resistance networks</p>
+</header>
+
+<div class="main">
+
+<!-- USER GUIDE -->
+<div class="guide">
+  <h2 onclick="toggleGuide()">📖 User Guide <span id="guide-arrow">▼</span></h2>
+  <div class="guide-body" id="guide-body">
+
+    <div class="note">This tool runs entirely in your browser — no data is uploaded to any server. All computation happens locally.</div>
+
+    <h3>What does this tool do?</h3>
+    <p>This tool takes bacterial and phage genome sequences (FASTA format) and:</p>
+    <ol>
+      <li>Scans bacterial genomes for <strong>CRISPR arrays</strong> (direct repeats flanking spacers)</li>
+      <li>Classifies the <strong>Cas system type</strong> (Type I–V) from each bacterial genome</li>
+      <li>Extracts all <strong>spacer sequences</strong> from detected CRISPR arrays</li>
+      <li>Aligns spacers against <strong>phage genomes</strong> using Smith-Waterman local alignment</li>
+      <li>Checks for a valid <strong>PAM sequence</strong> flanking each alignment hit</li>
+      <li>Computes a <strong>resistance score</strong> (alignment + PAM) and draws an interactive network</li>
+    </ol>
+
+    <h3>Input files</h3>
+    <ul>
+      <li>Format: <code>.fasta</code>, <code>.fa</code>, or <code>.fna</code></li>
+      <li>One file = one organism. Multi-contig assemblies are supported — all contigs in one file are treated as one organism.</li>
+      <li>Upload one or more bacterial files and one or more phage files.</li>
+    </ul>
+
+    <h3>Step-by-step</h3>
+    <ol>
+      <li>Upload your <strong>bacterial FASTA files</strong> (left panel)</li>
+      <li>Upload your <strong>phage FASTA files</strong> (right panel)</li>
+      <li>Adjust parameters if needed (see below)</li>
+      <li>Click <strong>Analyze</strong></li>
+      <li>Explore the network — hover over nodes for details, drag to rearrange</li>
+      <li>Download the network as SVG or the full results as CSV</li>
+    </ol>
+
+    <h3>Parameters</h3>
+    <table>
+      <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
+      <tr><td>Min repeat length</td><td>Minimum length of CRISPR direct repeats to detect</td><td>28 bp</td></tr>
+      <tr><td>Min spacer length</td><td>Minimum length of spacers between repeats</td><td>30 bp</td></tr>
+      <tr><td>Alignment weight</td><td>How much the spacer-phage alignment score contributes to the final score</td><td>50%</td></tr>
+      <tr><td>PAM weight</td><td>How much PAM presence contributes to the final score</td><td>50%</td></tr>
+      <tr><td>Min score to show</td><td>Edges below this score are hidden from the network</td><td>20%</td></tr>
+    </table>
+
+    <h3>Reading the network</h3>
+    <ul>
+      <li><span style="color:#1D9E75;font-weight:600">● Green nodes</span> = bacteria</li>
+      <li><span style="color:#D85A30;font-weight:600">● Red nodes</span> = phages</li>
+      <li><strong>Distance encodes resistance</strong>: nodes that are <em>farther apart</em> have a higher resistance score (the bacterium is more likely to resist that phage)</li>
+      <li>Hover over any node to see details (CRISPR arrays found, Cas type, spacer count)</li>
+      <li>Drag nodes to rearrange the layout</li>
+    </ul>
+
+    <h3>PAM inference</h3>
+    <p>The PAM motif is automatically selected based on the detected Cas type:</p>
+    <table>
+      <tr><th>Cas type</th><th>PAM motif</th><th>Position</th></tr>
+      <tr><td>Type II (Cas9)</td><td>NGG</td><td>Downstream of protospacer</td></tr>
+      <tr><td>Type V (Cas12)</td><td>TTN</td><td>Upstream of protospacer</td></tr>
+      <tr><td>Type I (Cascade)</td><td>AWG</td><td>Upstream of protospacer</td></tr>
+      <tr><td>Type III (Cas10)</td><td>RAAG</td><td>Downstream of protospacer</td></tr>
+    </table>
+
+    <h3>Outputs</h3>
+    <ul>
+      <li><strong>Network SVG</strong>: vector image of the resistance network, suitable for publications</li>
+      <li><strong>Results CSV</strong>: full table with every spacer-phage alignment, PAM status, and scores</li>
+    </ul>
+
+    <div class="note"><strong>Tip:</strong> For best results, use complete or near-complete genome assemblies. Very fragmented assemblies (&gt;500 contigs) may miss CRISPR arrays that span contig boundaries.</div>
+  </div>
+</div>
+
+<!-- UPLOAD -->
+<div class="card">
+  <h2>1 — Upload genomes</h2>
+  <div class="row">
+    <div>
+      <div class="upload-zone" onclick="document.getElementById('bact-input').click()">
+        <input type="file" id="bact-input" multiple accept=".fasta,.fa,.fna,.txt">
+        <div class="label">🔵 Bacterial genomes</div>
+        <div class="hint">Click to upload · .fasta / .fa / .fna</div>
+      </div>
+      <div class="file-list" id="bact-files"></div>
+    </div>
+    <div>
+      <div class="upload-zone" onclick="document.getElementById('phage-input').click()">
+        <input type="file" id="phage-input" multiple accept=".fasta,.fa,.fna,.txt">
+        <div class="label">🔴 Phage genomes</div>
+        <div class="hint">Click to upload · .fasta / .fa / .fna</div>
+      </div>
+      <div class="file-list" id="phage-files"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PARAMETERS -->
+<div class="card">
+  <h2>2 — Parameters</h2>
+  <div class="slider-row"><label>Min repeat length</label><input type="range" id="minRepeat" min="20" max="50" value="28"><span id="minRepeatVal">28 bp</span></div>
+  <div class="slider-row"><label>Min spacer length</label><input type="range" id="minSpacer" min="20" max="50" value="30"><span id="minSpacerVal">30 bp</span></div>
+  <div class="slider-row"><label>Alignment weight</label><input type="range" id="alignW" min="0" max="100" value="50"><span id="alignWVal">50%</span></div>
+  <div class="slider-row"><label>PAM weight</label><input type="range" id="pamW" min="0" max="100" value="50"><span id="pamWVal">50%</span></div>
+  <div class="slider-row"><label>Min score to show</label><input type="range" id="minScore" min="0" max="100" value="20"><span id="minScoreVal">20%</span></div>
+</div>
+
+<!-- RUN -->
+<div class="card">
+  <h2>3 — Run</h2>
+  <div class="btn-row">
+    <button class="action primary" id="run-btn" disabled onclick="runAnalysis()">▶ Analyze</button>
+    <button class="action danger" onclick="resetFiles()">✕ Reset files</button>
+  </div>
+  <div id="err-msg" class="err"></div>
+  <div class="progress" id="progress">
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar"></div></div>
+    <div class="progress-label" id="prog-label">Initializing...</div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="stats-section" style="display:none">
+  <div class="card">
+    <h2>4 — Results</h2>
+    <div class="stat-row">
+      <div class="stat"><div class="n" id="st-bact">0</div><div class="l">Bacteria</div></div>
+      <div class="stat"><div class="n" id="st-phage">0</div><div class="l">Phages</div></div>
+      <div class="stat"><div class="n" id="st-arrays">0</div><div class="l">CRISPR arrays</div></div>
+      <div class="stat"><div class="n" id="st-spacers">0</div><div class="l">Spacers</div></div>
+    </div>
+
+    <div id="canvas-wrap">
+      <canvas id="net" height="500"></canvas>
+      <div id="tooltip"></div>
+      <div class="legend">
+        <span><span class="legend-dot" style="background:#1D9E75"></span>Bacteria</span>
+        <span><span class="legend-dot" style="background:#D85A30"></span>Phage</span>
+        <span>Further apart = stronger resistance</span>
+      </div>
+    </div>
+
+    <div class="dl-row" id="dl-btns">
+      <button class="action" onclick="downloadSVG()">⬇ Download network SVG</button>
+      <button class="action" onclick="downloadCSV()">⬇ Download results CSV</button>
+    </div>
+  </div>
+</div>
+
+<div id="table-wrap" style="display:none" class="card">
+  <h2>Spacer alignment details</h2>
+  <div style="overflow-x:auto">
+    <table class="results-table">
+      <thead><tr><th>Bacterium</th><th>CRISPR type</th><th>Spacer #</th><th>Phage</th><th>Align score</th><th>PAM</th><th>Final score</th></tr></thead>
+      <tbody id="result-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+const bacteriaFiles={}, phageFiles={};
+let nodes=[], edges=[], allTableRows=[], animFrame=null, dragging=null;
+
+// Guide toggle
+function toggleGuide(){
+  const b=document.getElementById('guide-body');
+  const a=document.getElementById('guide-arrow');
+  b.style.display=b.style.display==='none'?'block':'none';
+  a.textContent=b.style.display==='none'?'▶':'▼';
+}
+
+// Sliders
+function sliderSync(id,valId,suffix){
+  const s=document.getElementById(id),v=document.getElementById(valId);
+  s.oninput=()=>v.textContent=s.value+suffix;
+}
+sliderSync('minRepeat','minRepeatVal',' bp');
+sliderSync('minSpacer','minSpacerVal',' bp');
+sliderSync('alignW','alignWVal','%');
+sliderSync('pamW','pamWVal','%');
+sliderSync('minScore','minScoreVal','%');
+
+// File upload
+function setupZone(inputId,store,listId,cls){
+  document.getElementById(inputId).onchange=function(){
+    for(const f of this.files){
+      const r=new FileReader();
+      r.onload=e=>{store[f.name]=e.target.result;renderList(store,listId,cls);checkReady();};
+      r.readAsText(f);
+    }
+  };
+}
+setupZone('bact-input',bacteriaFiles,'bact-files','bact');
+setupZone('phage-input',phageFiles,'phage-files','phage');
+
+function renderList(store,listId,cls){
+  document.getElementById(listId).innerHTML=Object.keys(store).map(n=>`<span class="file-tag ${cls}">${n}</span>`).join('');
+}
+function checkReady(){
+  document.getElementById('run-btn').disabled=!(Object.keys(bacteriaFiles).length&&Object.keys(phageFiles).length);
+}
+
+function resetFiles(){
+  for(const k of Object.keys(bacteriaFiles)) delete bacteriaFiles[k];
+  for(const k of Object.keys(phageFiles)) delete phageFiles[k];
+  document.getElementById('bact-files').innerHTML='';
+  document.getElementById('phage-files').innerHTML='';
+  document.getElementById('bact-input').value='';
+  document.getElementById('phage-input').value='';
+  document.getElementById('run-btn').disabled=true;
+  document.getElementById('err-msg').textContent='';
+}
+
+// FASTA parser
+function parseFasta(text){
+  const seqs=[]; let cur=null;
+  for(const line of text.split(/\r?\n/)){
+    if(line.startsWith('>')){if(cur)seqs.push(cur);cur={name:line.slice(1).split(/\s+/)[0],seq:''};}
+    else if(cur) cur.seq+=line.trim().toUpperCase();
+  }
+  if(cur)seqs.push(cur);
+  return seqs;
+}
+
+// Hamming distance (approximate)
+function hammingApprox(a,b,max){
+  let mm=0;
+  for(let i=0;i<a.length&&mm<=max;i++) if(a[i]!==b[i]) mm++;
+  return mm;
+}
+
+// CRISPR array detection
+function findCRISPRArrays(seq,minRep,minSp){
+  const arrays=[],maxRep=55,maxSp=60,maxMM=3;
+  for(let i=0;i<seq.length-minRep*2-minSp;i++){
+    const rep=seq.slice(i,i+minRep);
+    for(let spLen=minSp;spLen<=maxSp;spLen++){
+      const j=i+minRep+spLen;
+      if(j+minRep>seq.length) break;
+      if(hammingApprox(rep,seq.slice(j,j+minRep),maxMM)<=maxMM){
+        const spacers=[seq.slice(i+minRep,j)];
+        let pos=j;
+        while(true){
+          const nextSp=pos+minRep; let found=false;
+          for(let sl=minSp;sl<=maxSp;sl++){
+            const nj=nextSp+sl;
+            if(nj+minRep>seq.length) break;
+            if(hammingApprox(rep,seq.slice(nj,nj+minRep),maxMM)<=maxMM){spacers.push(seq.slice(nextSp,nj));pos=nj;found=true;break;}
+          }
+          if(!found) break;
+        }
+        if(spacers.length>=2){arrays.push({pos:i,repeat:rep,spacers,raw:seq.slice(i,pos+minRep)});i=pos+minRep;break;}
+      }
+    }
+  }
+  return arrays;
+}
+
+// Cas type inference
+function inferCasType(seq){
+  if(/ATGGATAAG/.test(seq)) return 'Type II (Cas9)';
+  if(/ATGGAGAAG/.test(seq)) return 'Type V (Cas12)';
+  if(/ATGCGTAGT/.test(seq)) return 'Type I (Cascade)';
+  if(/ATGGGAGAT/.test(seq)) return 'Type III (Cas10)';
+  const gc=(seq.match(/[GC]/g)||[]).length/seq.length;
+  if(gc>0.6) return 'Type I (Cascade)';
+  if(gc<0.4) return 'Type V (Cas12)';
+  return 'Type II (Cas9)';
+}
+
+// PAM patterns
+const PAM={
+  'Type II (Cas9)':{pattern:/NGG/,upstream:false},
+  'Type V (Cas12)':{pattern:/TTN/,upstream:true},
+  'Type I (Cascade)':{pattern:/A[AT]G/,upstream:true},
+  'Type III (Cas10)':{pattern:/[AG]AAG/,upstream:false},
+};
+
+// Smith-Waterman alignment score (normalised 0-1)
+function swAlign(q,ref){
+  const match=2,mm=-1,gap=-2;
+  const m=q.length,n=ref.length;
+  if(!m||!n) return 0;
+  let best=0;
+  const prev=new Int16Array(n+1),curr=new Int16Array(n+1);
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      curr[j]=Math.max(0,prev[j-1]+(q[i-1]===ref[j-1]?match:mm),curr[j-1]+gap,prev[j]+gap);
+      if(curr[j]>best) best=curr[j];
+    }
+    prev.set(curr);curr.fill(0);
+  }
+  return best/(q.length*match);
+}
+
+// Spacer alignment + PAM check
+function alignSpacer(spacer,phageSeq,casType){
+  const pam=PAM[casType]||PAM['Type II (Cas9)'];
+  let bestScore=0,bestPos=-1;
+  const step=Math.max(1,Math.floor(spacer.length/2));
+  for(let i=0;i<phageSeq.length-spacer.length;i+=step){
+    const sc=swAlign(spacer,phageSeq.slice(i,i+spacer.length+20));
+    if(sc>bestScore){bestScore=sc;bestPos=i;}
+  }
+  let pamFound=false;
+  if(bestPos>=0){
+    const flank=pam.upstream?phageSeq.slice(Math.max(0,bestPos-6),bestPos+3):phageSeq.slice(bestPos+spacer.length-3,bestPos+spacer.length+6);
+    pamFound=pam.pattern.test(flank);
+  }
+  return{alignScore:bestScore,pamFound};
+}
+
+function setProgress(pct,label){
+  document.getElementById('prog-bar').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=label;
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function runAnalysis(){
+  document.getElementById('err-msg').textContent='';
+  const minRep=+document.getElementById('minRepeat').value;
+  const minSp=+document.getElementById('minSpacer').value;
+  const minScore=+document.getElementById('minScore').value/100;
+  const aw=+document.getElementById('alignW').value/100;
+  const pw=+document.getElementById('pamW').value/100;
+
+  document.getElementById('progress').style.display='block';
+  document.getElementById('stats-section').style.display='none';
+  document.getElementById('table-wrap').style.display='none';
+  setProgress(5,'Parsing FASTA files...');
+  await sleep(30);
+
+  const bacteriaSeqs={},phageSeqs={};
+  for(const [fname,text] of Object.entries(bacteriaFiles)){
+    bacteriaSeqs[fname.replace(/\.(fasta|fa|fna|txt)$/i,'')]=parseFasta(text);
+  }
+  for(const [fname,text] of Object.entries(phageFiles)){
+    phageSeqs[fname.replace(/\.(fasta|fa|fna|txt)$/i,'')]=parseFasta(text);
+  }
+
+  const bacteriaNames=Object.keys(bacteriaSeqs);
+  const phageNames=Object.keys(phageSeqs);
+
+  setProgress(15,'Detecting CRISPR arrays...');
+  await sleep(30);
+
+  const bacteriaData={};
+  let totalArrays=0,totalSpacers=0;
+  for(const bname of bacteriaNames){
+    const contigs=bacteriaSeqs[bname];
+    let allArrays=[],allSpacers=[];
+    for(const c of contigs){allArrays=allArrays.concat(findCRISPRArrays(c.seq,minRep,minSp));allSpacers=allSpacers.concat(allArrays.flatMap(a=>a.spacers));}
+    const longest=contigs.reduce((a,b)=>b.seq.length>a.seq.length?b:a,contigs[0]);
+    bacteriaData[bname]={arrays:allArrays,casType:inferCasType(longest.seq),spacers:allSpacers};
+    totalArrays+=allArrays.length;totalSpacers+=allSpacers.length;
+  }
+
+  setProgress(30,'Aligning spacers to phages...');
+  await sleep(30);
+
+  allTableRows=[];
+  const edgeMap={};
+  let done=0,total=bacteriaNames.length*phageNames.length;
+
+  for(const bname of bacteriaNames){
+    const{spacers,casType}=bacteriaData[bname];
+    for(const pname of phageNames){
+      const phSeq=phageSeqs[pname].map(c=>c.seq).join('NNNNNNNNNN');
+      let bestAlign=0,pamCount=0;
+      for(let si=0;si<spacers.length;si++){
+        const sp=spacers[si];
+        if(!sp||sp.length<15) continue;
+        const{alignScore,pamFound}=alignSpacer(sp,phSeq,casType);
+        if(alignScore>bestAlign) bestAlign=alignScore;
+        if(pamFound) pamCount++;
+        const fs=(aw*alignScore+pw*(pamFound?1:0))/(aw+pw||1);
+        allTableRows.push({bname,casType,spacerIdx:si+1,pname,alignScore,pamFound,finalScore:fs});
+      }
+      const pamScore=spacers.length>0?Math.min(1,pamCount/spacers.length):0;
+      const score=(aw*bestAlign+pw*pamScore)/(aw+pw||1);
+      edgeMap[bname+'|||'+pname]={bname,pname,alignScore:bestAlign,pamScore,score};
+      done++;
+      if(done%3===0){setProgress(30+Math.floor(done/total*60),'Aligning spacers... '+done+'/'+total);await sleep(0);}
+    }
+  }
+
+  setProgress(92,'Building network...');
+  await sleep(30);
+
+  nodes=[];edges=[];
+  const nMap={};
+  const W=document.getElementById('net').offsetWidth||700,H=500;
+  for(const b of bacteriaNames){
+    const nd={id:b,type:'bact',x:100+Math.random()*(W-200),y:80+Math.random()*(H-160),vx:0,vy:0,
+      arrays:bacteriaData[b].arrays.length,spacers:bacteriaData[b].spacers.length,casType:bacteriaData[b].casType};
+    nodes.push(nd);nMap[b]=nd;
+  }
+  for(const p of phageNames){
+    const nd={id:p,type:'phage',x:100+Math.random()*(W-200),y:80+Math.random()*(H-160),vx:0,vy:0};
+    nodes.push(nd);nMap[p]=nd;
+  }
+  for(const e of Object.values(edgeMap)){
+    if(e.score>=minScore) edges.push({src:nMap[e.bname],tgt:nMap[e.pname],score:e.score,align:e.alignScore,pam:e.pamScore});
+  }
+
+  document.getElementById('st-bact').textContent=bacteriaNames.length;
+  document.getElementById('st-phage').textContent=phageNames.length;
+  document.getElementById('st-arrays').textContent=totalArrays;
+  document.getElementById('st-spacers').textContent=totalSpacers;
+
+  // Table
+  const tbody=document.getElementById('result-tbody');
+  tbody.innerHTML='';
+  for(const r of allTableRows.slice(0,300)){
+    const sc=r.alignScore;
+    const badge=sc>0.7?'high':sc>0.4?'mid':sc>0.15?'low':'none';
+    const lbl=sc>0.7?'Strong':sc>0.4?'Moderate':sc>0.15?'Weak':'Minimal';
+    tbody.innerHTML+=`<tr><td>${r.bname}</td><td>${r.casType}</td><td>${r.spacerIdx}</td><td>${r.pname}</td>
+    <td><span class="badge ${badge}">${lbl} (${(r.alignScore*100).toFixed(1)}%)</span></td>
+    <td>${r.pamFound?'<span class="badge high">Yes</span>':'<span class="badge none">No</span>'}</td>
+    <td>${(r.finalScore*100).toFixed(1)}%</td></tr>`;
+  }
+
+  setProgress(100,'Done!');
+  await sleep(200);
+  document.getElementById('progress').style.display='none';
+  document.getElementById('stats-section').style.display='block';
+  document.getElementById('canvas-wrap').style.display='block';
+  document.getElementById('dl-btns').style.display='flex';
+  document.getElementById('table-wrap').style.display='block';
+  startSim();
+}
+
+// Force simulation
+let simRunning=false;
+function startSim(){
+  if(animFrame) cancelAnimationFrame(animFrame);
+  simRunning=true;
+  const cv=document.getElementById('net');
+  cv.width=cv.offsetWidth*devicePixelRatio;
+  cv.height=500*devicePixelRatio;
+  cv.style.height='500px';
+  tick();
+}
+
+function tick(){
+  if(!simRunning) return;
+  const cv=document.getElementById('net');
+  const W=cv.width/devicePixelRatio,H=cv.height/devicePixelRatio;
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  ctx.clearRect(0,0,W,H);
+
+  const repulse=2400,attract=0.013,damp=0.88,center=0.008;
+  for(const n of nodes){n.vx+=(W/2-n.x)*center;n.vy+=(H/2-n.y)*center;}
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i],b=nodes[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+      const f=repulse/(d*d),fx=f*dx/d,fy=f*dy/d;
+      a.vx-=fx;a.vy-=fy;b.vx+=fx;b.vy+=fy;
+    }
+  }
+  for(const e of edges){
+    const dx=e.tgt.x-e.src.x,dy=e.tgt.y-e.src.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+    const ideal=40+280*e.score;
+    const f=(d-ideal)*attract;
+    e.src.vx+=f*dx/d;e.src.vy+=f*dy/d;e.tgt.vx-=f*dx/d;e.tgt.vy-=f*dy/d;
+  }
+  for(const n of nodes){
+    if(dragging&&n.id===dragging) continue;
+    n.vx*=damp;n.vy*=damp;
+    n.x=Math.max(24,Math.min(W-24,n.x+n.vx));
+    n.y=Math.max(24,Math.min(H-24,n.y+n.vy));
+  }
+
+  // Draw edges
+  for(const e of edges){
+    ctx.beginPath();ctx.moveTo(e.src.x,e.src.y);ctx.lineTo(e.tgt.x,e.tgt.y);
+    ctx.strokeStyle=`rgba(136,135,128,${(0.2+e.score*0.6).toFixed(2)})`;
+    ctx.lineWidth=0.5+e.score*3;ctx.stroke();
+    if(e.score>0.5){
+      const mx=(e.src.x+e.tgt.x)/2,my=(e.src.y+e.tgt.y)/2;
+      ctx.fillStyle='rgba(95,94,90,0.75)';ctx.font='10px system-ui';
+      ctx.fillText((e.score*100).toFixed(0)+'%',mx+3,my-3);
+    }
+  }
+  // Draw nodes
+  for(const n of nodes){
+    const r=n.type==='bact'?18:14;
+    ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);
+    ctx.fillStyle=n.type==='bact'?'#1D9E75':'#D85A30';ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.9)';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 9px system-ui';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(n.id.length>8?n.id.slice(0,7)+'…':n.id,n.x,n.y);
+    ctx.textAlign='start';ctx.textBaseline='alphabetic';
+  }
+  animFrame=requestAnimationFrame(tick);
+}
+
+// Canvas interaction
+const cv=document.getElementById('net');
+function getNode(x,y){
+  const r=cv.getBoundingClientRect();
+  const mx=x-r.left,my=y-r.top;
+  return nodes.find(n=>Math.hypot(n.x-mx,n.y-my)<20)||null;
+}
+cv.addEventListener('mousedown',e=>{const n=getNode(e.clientX,e.clientY);if(n){dragging=n.id;n.vx=0;n.vy=0;}});
+cv.addEventListener('mousemove',e=>{
+  const r=cv.getBoundingClientRect();
+  if(dragging){const n=nodes.find(nd=>nd.id===dragging);if(n){n.x=e.clientX-r.left;n.y=e.clientY-r.top;}}
+  const n=getNode(e.clientX,e.clientY);
+  const tip=document.getElementById('tooltip');
+  if(n){
+    tip.style.display='block';tip.style.left=(e.clientX-r.left+14)+'px';tip.style.top=(e.clientY-r.top-10)+'px';
+    tip.innerHTML=n.type==='bact'
+      ?`<b>${n.id}</b><br>Type: Bacterium<br>Cas system: ${n.casType}<br>CRISPR arrays: ${n.arrays}<br>Spacers: ${n.spacers}<br>Phage edges: ${edges.filter(e=>e.src.id===n.id||e.tgt.id===n.id).length}`
+      :`<b>${n.id}</b><br>Type: Phage<br>Bacterial edges: ${edges.filter(e=>e.src.id===n.id||e.tgt.id===n.id).length}`;
+  } else tip.style.display='none';
+});
+cv.addEventListener('mouseup',()=>dragging=null);
+cv.addEventListener('mouseleave',()=>{dragging=null;document.getElementById('tooltip').style.display='none';});
+
+// Downloads
+function buildSVG(){
+  const W=cv.width/devicePixelRatio,H=cv.height/devicePixelRatio;
+  let s=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" style="background:#fff">`;
+  for(const e of edges){
+    s+=`<line x1="${e.src.x.toFixed(1)}" y1="${e.src.y.toFixed(1)}" x2="${e.tgt.x.toFixed(1)}" y2="${e.tgt.y.toFixed(1)}" stroke="rgba(136,135,128,${(0.2+e.score*0.6).toFixed(2)})" stroke-width="${(0.5+e.score*3).toFixed(1)}"/>`;
+    if(e.score>0.5){const mx=((e.src.x+e.tgt.x)/2).toFixed(1),my=((e.src.y+e.tgt.y)/2).toFixed(1);s+=`<text x="${mx}" y="${my}" font-size="10" fill="#5f5e5a">${(e.score*100).toFixed(0)}%</text>`;}
+  }
+  for(const n of nodes){
+    const r=n.type==='bact'?18:14,col=n.type==='bact'?'#1D9E75':'#D85A30',lbl=n.id.length>8?n.id.slice(0,7)+'…':n.id;
+    s+=`<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="${r}" fill="${col}" stroke="#fff" stroke-width="1.5"/>`;
+    s+=`<text x="${n.x.toFixed(1)}" y="${(n.y+3.5).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">${lbl}</text>`;
+  }
+  s+=`<circle cx="16" cy="${H-20}" r="7" fill="#1D9E75"/><text x="27" y="${H-15}" font-size="11" fill="#444">Bacteria</text>`;
+  s+=`<circle cx="92" cy="${H-20}" r="7" fill="#D85A30"/><text x="103" y="${H-15}" font-size="11" fill="#444">Phage</text>`;
+  s+=`<text x="170" y="${H-15}" font-size="10" fill="#888">Further apart = stronger resistance</text></svg>`;
+  return s;
+}
+
+function downloadSVG(){
+  const a=document.createElement('a');
+  a.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(buildSVG());
+  a.download='crispr_phage_network.svg';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+function downloadCSV(){
+  const hdr='Bacterium,CRISPR_type,Spacer_index,Phage,Align_score_pct,PAM_found,Final_score_pct\n';
+  const rows=allTableRows.map(r=>[r.bname,r.casType,r.spacerIdx,r.pname,(r.alignScore*100).toFixed(1),r.pamFound?'Yes':'No',(r.finalScore*100).toFixed(1)].join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(hdr+rows);
+  a.download='crispr_phage_results.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+</script>
+</body>
+</html>
